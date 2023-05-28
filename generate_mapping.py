@@ -6,13 +6,6 @@ import os
 import json
 import argparse
 
-PUBLIC_HEADERS = ["Windows.h"]
-# PUBLIC_HEADERS = [
-# get all from https://en.cppreference.com/w/cpp/header
-#    "array",
-# "memory",
-# "string",
-# ]
 INCLUDE_REGEX = re.compile("^#include [<](.+?)[>]")
 
 
@@ -91,12 +84,15 @@ def headers_to_imp(mappings):
 
 
 def main():
+    global PUBLIC_HEADERS
     parser = argparse.ArgumentParser()
     parser.add_argument("root", type=str)
-    parser.add_argument('-o', "--output", type=str, default=None)
+    parser.add_argument("public_headers", type=str)
+    parser.add_argument("-o", "--output", type=str, default=None)
     args = parser.parse_args()
+    PUBLIC_HEADERS = list(l.strip() for l in open(args.public_headers, 'r')) 
     mappings = parse_headers(args.root)
-    imp_content = headers_to_imp(mappings)
+    imp_content = list(headers_to_imp(mappings))
     if args.output:
         json.dump(imp_content, open(args.output, "w"))
     else:
