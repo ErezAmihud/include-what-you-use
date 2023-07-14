@@ -54,7 +54,7 @@ def parse_header(root, header, processed):
     for i in (
         h
         for h in get_file_includes(os.path.join(root, *header.split("/")))
-        if h not in PUBLIC_HEADERS and os.path.exists(os.path.join(root, h))
+        if h not in PUBLIC_HEADERS 
     ):
         yield i
         yield from parse_header(root, i, processed)
@@ -62,8 +62,9 @@ def parse_header(root, header, processed):
 
 def parse_headers(root):
     mappings = {}
+    processed = []
     for header in PUBLIC_HEADERS:
-        mappings[header] = set(parse_header(root, header, []))
+        mappings[header] = set(parse_header(root, header, processed))
     return mappings
 
 
@@ -76,9 +77,9 @@ def headers_to_imp(mappings):
             yield {
                 "include": [
                     f"<{public_header}>",
-                    "private",
-                    f"<{public_header}>",
                     "public",
+                    f"<{private_header}>",
+                    "private",
                 ]
             }
 
