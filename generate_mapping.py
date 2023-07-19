@@ -9,7 +9,7 @@ import argparse
 INCLUDE_REGEX = re.compile("^#include [<](.+?)[>]")
 
 
-def get_include(data):
+def get_include_from_line(data):
     """
     Get line of text and return the include file it is pointing to.
     Works only on absolute includes (using < >)
@@ -26,7 +26,7 @@ def get_file_includes(file_path):
     :return: an iterator of all the includes
     """
     for line in open(file_path, "r"):
-        include = get_include(line)
+        include = get_include_from_line(line)
         if include:
             yield include
 
@@ -40,7 +40,7 @@ def header_to_path(root, header):
 
 def parse_header(root, header, processed):
     """
-    Parsed a header from the root directory
+    Parse a header from the root directory
     """
     if not os.path.exists(
         header_to_path(root, header)
@@ -50,20 +50,15 @@ def parse_header(root, header, processed):
     if header in processed:
         return
     processed.append(header)
-
-    for i in (
-        h
-        for h in get_file_includes(os.path.join(root, *header.split("/")))
-        if h not in PUBLIC_HEADERS 
-    ):
-        yield i
-        yield from parse_header(root, i, processed)
+    for h in get_file_includes(header_to_path(root, header)):
+        yield h
+        yield from parse_header(root, h, processed)
 
 
-def parse_headers(root):
+def parse_headers(root, public_headers):
     mappings = {}
-    processed = []
-    for header in PUBLIC_HEADERS:
+    processed = list(public_headers)
+    for header in public_headers:
         mappings[header] = set(parse_header(root, header, processed))
     return mappings
 
@@ -85,17 +80,16 @@ def headers_to_imp(mappings):
 
 
 def main():
-    global PUBLIC_HEADERS
     parser = argparse.ArgumentParser()
     parser.add_argument("root", type=str)
     parser.add_argument("public_headers", type=str)
     parser.add_argument("-o", "--output", type=str, default=None)
     args = parser.parse_args()
-    PUBLIC_HEADERS = list(l.strip() for l in open(args.public_headers, 'r')) 
-    mappings = parse_headers(args.root)
+    public_headers = list(l.strip() for l in open(args.public_headers, 'r')) 
+    mappings = parse_headers(args.root, public_headers)
     imp_content = list(headers_to_imp(mappings))
     if args.output:
-        json.dump(imp_content, open(args.output, "w"))
+        json.dump(imp_content, open(args.output, "w"), indent=2)
     else:
         print(imp_content)
 

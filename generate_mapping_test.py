@@ -28,4 +28,5 @@ class TestIncludeRegex(unittest.TestCase):
             with self.subTest(
                 msg="Check regex on line equal result", line=include, result=result
             ):
-                self.assertEqual(generate_mapping.get_include(include), result)
+                self.assertEqual(generate_mapping.get_include_from_line(include), result)
+
